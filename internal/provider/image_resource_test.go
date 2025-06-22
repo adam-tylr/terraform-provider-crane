@@ -369,15 +369,15 @@ resource "crane_image" "test" {
 `, source, destination, platform)
 }
 
-func testAccImageWithSourceDigest(source string, destination string, sourceDigest string) string {
-	return fmt.Sprintf(`
-resource "crane_image" "test" {
-  source = %q
-  destination = %q
-  source_digest = %q
-}
-`, source, destination, sourceDigest)
-}
+// func testAccImageWithSourceDigest(source string, destination string, sourceDigest string) string {
+// 	return fmt.Sprintf(`
+// resource "crane_image" "test" {
+//   source = %q
+//   destination = %q
+//   source_digest = %q
+// }
+// `, source, destination, sourceDigest)
+// }
 
 // Test Cases for the image resource
 // Source is a tar file

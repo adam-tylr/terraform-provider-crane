@@ -68,9 +68,16 @@ func (e checkRemoteImage) CheckState(ctx context.Context, req statecheck.CheckSt
 
 		return
 	}
-	id, _ := tfjsonpath.Traverse(resource.AttributeValues, tfjsonpath.New("id"))
-	platform, _ := tfjsonpath.Traverse(resource.AttributeValues, tfjsonpath.New("platform"))
-	repo, _ := name.ParseReference(id.(string))
+
+	idValue, _ := tfjsonpath.Traverse(resource.AttributeValues, tfjsonpath.New("id"))
+	id, ok := idValue.(string)
+	if !ok {
+		resp.Error = fmt.Errorf("expected id to be a string, but got %T", idValue)
+		return
+	}
+	platformValue, _ := tfjsonpath.Traverse(resource.AttributeValues, tfjsonpath.New("platform"))
+
+	repo, _ := name.ParseReference(id)
 
 	// Load the AWS configuration
 	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion("us-east-1"))
@@ -107,7 +114,7 @@ func (e checkRemoteImage) CheckState(ctx context.Context, req statecheck.CheckSt
 		return
 	}
 
-	if platform == nil {
+	if platformValue == nil {
 		var m manifest
 		err = json.Unmarshal([]byte(*result.Images[0].ImageManifest), &m)
 		if err != nil {
@@ -126,9 +133,14 @@ func (e checkRemoteImage) CheckState(ctx context.Context, req statecheck.CheckSt
 			return
 		}
 	} else {
-		p, _ := v1.ParsePlatform(platform.(string))
+		platform, ok := platformValue.(string)
+		if !ok && platformValue != nil {
+			resp.Error = fmt.Errorf("expected platform to be a string, but got %T", platformValue)
+			return
+		}
+		p, _ := v1.ParsePlatform(platform)
 		opts := []crane.Option{crane.WithPlatform(p)}
-		d, _ := crane.Digest(id.(string), opts...)
+		d, _ := crane.Digest(id, opts...)
 		if *result.Images[0].ImageId.ImageDigest != d {
 			resp.Error = fmt.Errorf("image digest does not match expected digest: %s", *result.Images[0].ImageId.ImageDigest)
 			return
