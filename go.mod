@@ -1,12 +1,13 @@
 module github.com/adam-tylr/terraform-provider-crane
 
-go 1.23.7
+go 1.24
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.43.3
-	github.com/google/go-containerregistry v0.20.3
+	github.com/google/go-containerregistry v0.20.6
+	github.com/hashicorp/terraform-json v0.24.0
 	github.com/hashicorp/terraform-plugin-framework v1.14.1
 	github.com/hashicorp/terraform-plugin-go v0.26.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
@@ -30,9 +31,9 @@ require (
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
-	github.com/docker/cli v27.5.0+incompatible // indirect
+	github.com/docker/cli v28.2.2+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker-credential-helpers v0.8.2 // indirect
+	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -50,13 +51,11 @@ require (
 	github.com/hashicorp/hcl/v2 v2.23.0 // indirect
 	github.com/hashicorp/logutils v1.0.0 // indirect
 	github.com/hashicorp/terraform-exec v0.22.0 // indirect
-	github.com/hashicorp/terraform-json v0.24.0 // indirect
-	github.com/hashicorp/terraform-plugin-framework-validators v0.17.0 // indirect
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.36.1 // indirect
 	github.com/hashicorp/terraform-registry-address v0.2.4 // indirect
 	github.com/hashicorp/terraform-svchost v0.1.1 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/klauspost/compress v1.17.11 // indirect
+	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -68,22 +67,22 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0 // indirect
+	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.12.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/vbatts/tar-split v0.11.6 // indirect
+	github.com/vbatts/tar-split v0.12.1 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/zclconf/go-cty v1.16.2 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sync v0.12.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/mod v0.25.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sync v0.15.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
+	golang.org/x/tools v0.34.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
 	google.golang.org/grpc v1.69.4 // indirect
