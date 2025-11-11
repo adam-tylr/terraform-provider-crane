@@ -24,7 +24,7 @@ func TestAccImageResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImage("alpine", fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -39,7 +39,7 @@ func TestAccImageResource(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -51,7 +51,7 @@ func TestAccImageResource(t *testing.T) {
 			},
 			// Update Source tag
 			{
-				Config: testAccImage("alpine:3", fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine:3"), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -66,7 +66,7 @@ func TestAccImageResource(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine:3"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine:3")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -78,7 +78,7 @@ func TestAccImageResource(t *testing.T) {
 			},
 			// Update Source digest
 			{
-				Config: testAccImage("alpine@sha256:de4fe7064d8f98419ea6b49190df1abbf43450c1702eeb864fe9ced453c1cc5f", fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -93,7 +93,7 @@ func TestAccImageResource(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine@sha256:de4fe7064d8f98419ea6b49190df1abbf43450c1702eeb864fe9ced453c1cc5f"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -105,7 +105,7 @@ func TestAccImageResource(t *testing.T) {
 			},
 			// Update Destination tag
 			{
-				Config: testAccImage("alpine:3", fmt.Sprintf("%s:3", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine:3"), fmt.Sprintf("%s:3", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -120,7 +120,7 @@ func TestAccImageResource(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine:3"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine:3")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -144,7 +144,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImageWithPlatform("alpine:latest", fmt.Sprintf("%s:latest", repo), "linux/amd64"),
+				Config: testAccImageWithPlatform(testutils.CreateSourceRef("docker/library/alpine:latest"), fmt.Sprintf("%s:latest", repo), "linux/amd64"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -159,7 +159,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine:latest"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine:latest")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -176,7 +176,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 			},
 			// Update the platform to a different architecture
 			{
-				Config: testAccImageWithPlatform("alpine", fmt.Sprintf("%s:latest", repo), "linux/arm64"),
+				Config: testAccImageWithPlatform(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo), "linux/arm64"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -191,7 +191,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -208,7 +208,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 			},
 			// Nullify the platform
 			{
-				Config: testAccImage("alpine", fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -223,7 +223,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -251,7 +251,7 @@ func TestAccImageResourceExternalDeletion(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImage("alpine", fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -266,7 +266,7 @@ func TestAccImageResourceExternalDeletion(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -305,7 +305,7 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImage("alpine", fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -320,7 +320,7 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact("alpine"),
+						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
