@@ -199,6 +199,14 @@ func (r *ImageResource) Create(ctx context.Context, req resource.CreateRequest, 
 
 func (r *ImageResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	var data ImageResourceModel
+
+	// Read Terraform prior state data into the model
+	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
+
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	craneOpts, err := setPlatform(r.options, data.Platform)
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -208,13 +216,6 @@ func (r *ImageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 	o := crane.GetOptions(craneOpts...)
-
-	// Read Terraform prior state data into the model
-	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
-
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	ref, err := name.ParseReference(data.Id.ValueString(), o.Name...)
 	if err != nil {
