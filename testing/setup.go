@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"testing"
 
@@ -16,6 +15,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ecr/types"
 	"github.com/google/go-containerregistry/pkg/crane"
 )
+
+var SOURCE_REGISTRY = os.Getenv("SOURCE_REGISTRY")
+
+func CreateSourceRef(image string) string {
+	return fmt.Sprintf("%s/%s", SOURCE_REGISTRY, image)
+}
 
 func CreateRepository(t *testing.T) (string, func()) {
 	t.Helper()
@@ -58,37 +63,15 @@ func CopyImagesToRepository(t *testing.T, targetRepoUri string) (tags []string) 
 	t.Helper()
 
 	imageTags := []string{"latest", "alpine"}
-	cwd, _ := os.Getwd()
-	index := strings.Index(cwd, "terraform-provider-crane")
-	root := cwd[:index+len("terraform-provider-crane")]
-	testingDir := path.Join(root, "testing")
 
 	for _, tag := range imageTags {
-		src := fmt.Sprintf("nginx:%s", tag)
+		src := fmt.Sprintf("%s/nginx/nginx:%s", SOURCE_REGISTRY, tag)
 		dst := fmt.Sprintf("%s:%s", targetRepoUri, tag)
 
-		tarPath := path.Join(testingDir, fmt.Sprintf("%s.tar.gz", tag))
-		// Avoid dockerhub rate limits by saving and loading images from a tarball
-		if _, err := os.Stat(tarPath); os.IsNotExist(err) {
-			t.Logf("Pulling image '%s' to save to %s", src, tarPath)
-			img, err := crane.Pull(src)
-			if err != nil {
-				t.Fatalf("failed to pull image %s: %v", src, err)
-			}
-			err = crane.Save(img, tag, tarPath)
-			if err != nil {
-				t.Fatalf("failed to save image %s to %s: %v", src, tarPath, err)
-			}
-		}
-
-		t.Logf("Pushing image '%s' to '%s'", src, dst)
-		img, err := crane.Load(tarPath)
+		t.Logf("Copying image '%s' from '%s'", src, dst)
+		err := crane.Copy(src, dst)
 		if err != nil {
-			t.Fatalf("failed to load image from %s: %v", tarPath, err)
-		}
-		err = crane.Push(img, dst)
-		if err != nil {
-			t.Fatalf("failed to push image from %s to %s: %v", tarPath, dst, err)
+			t.Fatalf("failed to copy image from %s to %s: %v", src, dst, err)
 		}
 	}
 	return imageTags
