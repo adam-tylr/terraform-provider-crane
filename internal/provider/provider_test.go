@@ -14,11 +14,6 @@ var testAccProtoV6ProviderFactories = map[string]func() (tfprotov6.ProviderServe
 	"crane": providerserver.NewProtocol6WithError(New("test")()),
 }
 
-// var testAccProtoV6ProviderFactoriesWithEcho = map[string]func() (tfprotov6.ProviderServer, error){
-// 	"crane": providerserver.NewProtocol6WithError(New("test")()),
-// 	"echo":  echoprovider.NewProviderServer(),
-// }
-
 func testAccPreCheck(t *testing.T) {
 
 }
