@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,8 +18,8 @@ import (
 
 // Ensure CraneProvider satisfies various provider interfaces.
 var _ provider.Provider = &CraneProvider{}
+var _ provider.ProviderWithFunctions = &CraneProvider{}
 
-// var _ provider.ProviderWithFunctions = &CraneProvider{}
 // var _ provider.ProviderWithEphemeralResources = &CraneProvider{}
 
 // CraneProvider defines the provider implementation.
@@ -27,6 +28,8 @@ type CraneProvider struct {
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
 	version string
+
+	options []crane.Option
 }
 
 type craneProviderModel struct {
@@ -63,6 +66,7 @@ func (p *CraneProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 	craneOpts = append(craneOpts, crane.WithUserAgent(fmt.Sprintf("terraform-provider-crane/%s", p.version)))
 
+	p.options = craneOpts
 	resp.ResourceData = craneOpts
 	resp.DataSourceData = craneOpts
 }
@@ -85,11 +89,13 @@ func (p *CraneProvider) DataSources(ctx context.Context) []func() datasource.Dat
 	}
 }
 
-// func (p *CraneProvider) Functions(ctx context.Context) []func() function.Function {
-// 	return []func() function.Function{
-// 		NewExampleFunction,
-// 	}
-// }
+func (p *CraneProvider) Functions(ctx context.Context) []func() function.Function {
+	return []func() function.Function{
+		func() function.Function {
+			return NewDigestFunction(p)
+		},
+	}
+}
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
