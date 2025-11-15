@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -57,6 +58,38 @@ func CreateRepository(t *testing.T) (string, func()) {
 			t.Logf("failed to delete repository: %v", err)
 		}
 	}
+}
+
+func CreateLocalTarball(t *testing.T, imageRef string) string {
+	t.Helper()
+
+	tag := strings.Split(imageRef, ":")[1]
+	// Get the name by taking the part after the last slash and before the colon
+	nameParts := strings.Split(imageRef, "/")
+	name := nameParts[len(nameParts)-1]
+	name = strings.Split(name, ":")[0]
+
+	cwd, _ := os.Getwd()
+	index := strings.Index(cwd, "terraform-provider-crane")
+	root := cwd[:index+len("terraform-provider-crane")]
+	testingDir := path.Join(root, "testing")
+	tarPath := path.Join(testingDir, fmt.Sprintf("%s%s.tar.gz", name, tag))
+
+	if _, err := os.Stat(tarPath); os.IsNotExist(err) {
+		t.Logf("Creating local tarball: %s", tarPath)
+
+		img, err := crane.Pull(imageRef)
+		if err != nil {
+			t.Fatalf("failed to pull image %s: %v", imageRef, err)
+		}
+
+		err = crane.Save(img, imageRef, tarPath)
+		if err != nil {
+			t.Fatalf("failed to create tarball for image %s: %v", imageRef, err)
+		}
+	}
+
+	return tarPath
 }
 
 func CopyImagesToRepository(t *testing.T, targetRepoUri string) (tags []string) {

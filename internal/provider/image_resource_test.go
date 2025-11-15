@@ -5,6 +5,7 @@ package provider
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	testutils "github.com/adam-tylr/terraform-provider-crane/testing"
@@ -15,7 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
-func TestAccImageResource(t *testing.T) {
+func TestAccImageResourceRemoteImage(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
 	defer teardown()
 	resource.Test(t, resource.TestCase{
@@ -48,6 +49,14 @@ func TestAccImageResource(t *testing.T) {
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionCreate,
+						),
+					},
+				},
 			},
 			// Update Source tag
 			{
@@ -74,6 +83,14 @@ func TestAccImageResource(t *testing.T) {
 						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionUpdate,
+						),
+					},
 				},
 			},
 			// Update Source digest
@@ -102,6 +119,14 @@ func TestAccImageResource(t *testing.T) {
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionUpdate,
+						),
+					},
+				},
 			},
 			// Update Destination tag
 			{
@@ -129,9 +154,101 @@ func TestAccImageResource(t *testing.T) {
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionReplace,
+						),
+					},
+				},
 			},
 		},
-		// CheckDestroy: testutils.CheckImageDestroy(repo),
+	})
+}
+
+func TestAccImageResourceWithTarball(t *testing.T) {
+	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+	tarPath := testutils.CreateLocalTarball(t, testutils.CreateSourceRef("docker/library/alpine:latest"))
+	updatedTarPath := testutils.CreateLocalTarball(t, testutils.CreateSourceRef("nginx/nginx:latest"))
+	defer os.Remove(tarPath)
+	defer os.Remove(updatedTarPath)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			// Create and Read testing
+			{
+				Config: testAccImageWithPlatform(tarPath, fmt.Sprintf("%s:latest", repo), "linux/amd64"),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("id"),
+						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
+					),
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("reference"),
+						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
+					),
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("source"),
+						knownvalue.StringExact(tarPath),
+					),
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("destination"),
+						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
+					),
+					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionCreate,
+						),
+					},
+				},
+			},
+			// Update Source path
+			{
+				Config: testAccImageWithPlatform(updatedTarPath, fmt.Sprintf("%s:latest", repo), "linux/amd64"),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("id"),
+						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
+					),
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("reference"),
+						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
+					),
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("source"),
+						knownvalue.StringExact(updatedTarPath),
+					),
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("destination"),
+						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
+					),
+					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionUpdate,
+						),
+					},
+				},
+			},
+		},
 	})
 }
 
@@ -173,6 +290,14 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionCreate,
+						),
+					},
+				},
 			},
 			// Update the platform to a different architecture
 			{
@@ -205,6 +330,14 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionUpdate,
+						),
+					},
+				},
 			},
 			// Nullify the platform
 			{
@@ -236,6 +369,14 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 						knownvalue.Null(),
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionUpdate,
+						),
+					},
 				},
 			},
 		},
@@ -274,6 +415,14 @@ func TestAccImageResourceExternalDeletion(t *testing.T) {
 						knownvalue.StringExact(fmt.Sprintf("%s:latest", repo)),
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionCreate,
+						),
+					},
 				},
 			},
 			{
@@ -329,6 +478,14 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 					),
 					testutils.CheckRemoteImage("crane_image.test"),
 				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionCreate,
+						),
+					},
+				},
 			},
 			{
 				// Delete the image externally and expect the resource to be recreated
@@ -345,6 +502,27 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 						),
 					},
 				},
+			},
+		},
+	})
+}
+
+func TestAccImageResourceImport(t *testing.T) {
+	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+	tags := testutils.CopyImagesToRepository(t, repo)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImage(testutils.CreateSourceRef(fmt.Sprintf("nginx/nginx:%s", tags[0])), fmt.Sprintf("%s:%s", repo, tags[0])),
+			},
+			{
+				ResourceName:            "crane_image.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"source"},
 			},
 		},
 	})
@@ -369,25 +547,12 @@ resource "crane_image" "test" {
 `, source, destination, platform)
 }
 
-// func testAccImageWithSourceDigest(source string, destination string, sourceDigest string) string {
-// 	return fmt.Sprintf(`
-// resource "crane_image" "test" {
-//   source = %q
-//   destination = %q
-//   source_digest = %q
-// }
-// `, source, destination, sourceDigest)
-// }
-
-// Test Cases for the image resource
-// Source is a tar file
-// Source is a remote image
-// Copy an image with a digest instead of a tag
-// Copy an image with a tag
-// Copy only one architecture of a multi-arch image
-// Trigger update by changing the source digest
-// Trigger update by changing the source tag
-// Trigger update by changing the destination tag
-// Trigger update by changing the architecture of a multi-arch image
-// Run an apply with the underlying image no longer existing
-// Run an apply with the underlying repo no longer existing
+func testAccImageWithSourceDigest(source string, destination string, sourceDigest string) string {
+	return fmt.Sprintf(`
+resource "crane_image" "test" {
+  source = %q
+  destination = %q
+  source_digest = %s
+}
+`, source, destination, sourceDigest)
+}
