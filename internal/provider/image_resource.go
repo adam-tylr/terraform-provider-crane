@@ -75,7 +75,7 @@ This resource is designed to support both Terraform and externally managed roll 
 				},
 			},
 			"source_digest": schema.StringAttribute{
-				MarkdownDescription: "Used to trigger updates for mutable tags. Set using `filemd5` for a local file or the digest function for a remote image.",
+				MarkdownDescription: "Used to trigger updates for mutable tags. Set using `filemd5` for a local file or the `crane_digest` data source for a remote image.",
 				Optional:            true,
 			},
 			"platform": schema.StringAttribute{

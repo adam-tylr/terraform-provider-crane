@@ -18,16 +18,12 @@ import (
 // Ensure CraneProvider satisfies various provider interfaces.
 var _ provider.Provider = &CraneProvider{}
 
-// var _ provider.ProviderWithEphemeralResources = &CraneProvider{}
-
 // CraneProvider defines the provider implementation.
 type CraneProvider struct {
 	// version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
 	version string
-
-	options []crane.Option
 }
 
 type craneProviderModel struct {
@@ -64,7 +60,6 @@ func (p *CraneProvider) Configure(ctx context.Context, req provider.ConfigureReq
 	}
 	craneOpts = append(craneOpts, crane.WithUserAgent(fmt.Sprintf("terraform-provider-crane/%s", p.version)))
 
-	p.options = craneOpts
 	resp.ResourceData = craneOpts
 	resp.DataSourceData = craneOpts
 }
@@ -74,12 +69,6 @@ func (p *CraneProvider) Resources(ctx context.Context) []func() resource.Resourc
 		NewImageResource,
 	}
 }
-
-// func (p *CraneProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
-// 	return []func() ephemeral.EphemeralResource{
-// 		NewExampleEphemeralResource,
-// 	}
-// }
 
 func (p *CraneProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{

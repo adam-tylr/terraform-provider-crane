@@ -31,8 +31,13 @@ resource "crane_image" "from_file" {
 }
 
 resource "crane_image" "mutable_tag" {
-  source      = "nginx:latest"
-  destination = "my-registry.local/nginx:stable"
+  source        = "nginx:latest"
+  source_digest = data.crane_digest.mutable_tag.digest
+  destination   = "my-registry.local/nginx:stable"
+}
+
+data "crane_digest" "mutable_tag" {
+  reference = "nginx:latest"
 }
 ```
 

@@ -38,7 +38,7 @@ func (d *DigestDataSource) Metadata(ctx context.Context, req datasource.Metadata
 
 func (d *DigestDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		MarkdownDescription: "Resolve the manifest digest for a container image reference.",
+		MarkdownDescription: "Resolve the digest for a container image reference.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Equivalent to the requested reference.",

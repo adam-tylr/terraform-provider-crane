@@ -3,12 +3,12 @@
 page_title: "crane_digest Data Source - terraform-provider-crane"
 subcategory: ""
 description: |-
-  Resolve the content digest for a container image reference.
+  Resolve the digest for a container image reference.
 ---
 
 # crane_digest (Data Source)
 
-Resolve the content digest for a container image reference.
+Resolve the digest for a container image reference.
 
 ## Example Usage
 
