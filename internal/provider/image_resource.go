@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package provider
 
 import (
@@ -156,7 +153,8 @@ func (r *ImageResource) Create(ctx context.Context, req resource.CreateRequest, 
 		)
 		return
 	}
-	dstImg, err := remote.Image(destRef, o.Remote...)
+	_, err = remote.Image(destRef, o.Remote...)
+	// Check if the image already exists at the destination
 	if err != nil {
 		var remoteErr *transport.Error
 		if ok := errors.As(err, &remoteErr); ok && remoteErr.StatusCode != 404 {
@@ -167,8 +165,8 @@ func (r *ImageResource) Create(ctx context.Context, req resource.CreateRequest, 
 			return
 		}
 	} else {
-		dstDigest, err := dstImg.Digest()
-		if err == nil && dstDigest.String() != sourceDigest {
+		dstDigest, err := crane.Digest(source, craneOpts...)
+		if err == nil && dstDigest != sourceDigest {
 			resp.Diagnostics.AddError(
 				"Destination image already exists but does not match source",
 				fmt.Sprintf("Destination image '%s' already exists with a different digest.", destination),
@@ -243,6 +241,19 @@ func (r *ImageResource) Read(ctx context.Context, req resource.ReadRequest, resp
 		)
 		return
 	}
+
+	actualDigest, err := crane.Digest(data.Id.ValueString(), craneOpts...)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading image digest",
+			fmt.Sprintf("Unable to read image digest for '%s': %s", data.Id.ValueString(), err),
+		)
+		return
+	}
+
+	data.Digest = types.StringValue(actualDigest)
+	data.Destination = types.StringValue(data.Id.ValueString())
+	data.Reference = types.StringValue(data.Id.ValueString())
 
 	// Save updated data into Terraform state
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
