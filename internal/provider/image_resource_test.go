@@ -6,6 +6,8 @@ package provider
 import (
 	"fmt"
 	"os"
+	"regexp"
+	"strings"
 	"testing"
 
 	testutils "github.com/adam-tylr/terraform-provider-crane/testing"
@@ -601,6 +603,70 @@ func TestAccImageResourceImport(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"source"},
+			},
+		},
+	})
+}
+
+func TestAccImageResourceSourceRepositoryDoesNotExist(t *testing.T) {
+	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+
+	missingSource := testutils.CreateSourceRef(fmt.Sprintf("missing/%s:latest", strings.ToLower(t.Name())))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccImage(missingSource, fmt.Sprintf("%s:latest", repo)),
+				ExpectError: regexp.MustCompile("Error reading source image"),
+			},
+		},
+	})
+}
+
+func TestAccImageResourceDestinationRepositoryDoesNotExist(t *testing.T) {
+	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+
+	parts := strings.SplitN(repo, "/", 2)
+	if len(parts) != 2 {
+		t.Fatalf("unexpected repository format: %s", repo)
+	}
+	missingRepo := fmt.Sprintf("%s/missing-%s", parts[0], strings.ToLower(t.Name()))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImage(
+					testutils.CreateSourceRef("docker/library/alpine:latest"),
+					fmt.Sprintf("%s:latest", missingRepo),
+				),
+				ExpectError: regexp.MustCompile("Error pushing image to destination"),
+			},
+		},
+	})
+}
+
+func TestAccImageResourceDestinationTagAlreadyExistsWithDifferentDigest(t *testing.T) {
+	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+
+	destination := fmt.Sprintf("%s:latest", repo)
+	if err := crane.Copy(testutils.CreateSourceRef("docker/library/alpine:3"), destination); err != nil {
+		t.Fatalf("failed to seed repository with initial image: %v", err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config:      testAccImage(testutils.CreateSourceRef("nginx/nginx:latest"), destination),
+				ExpectError: regexp.MustCompile("Destination image already exists but does not match source"),
 			},
 		},
 	})
