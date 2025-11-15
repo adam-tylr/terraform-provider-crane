@@ -18,9 +18,6 @@ import (
 // Ensure CraneProvider satisfies various provider interfaces.
 var _ provider.Provider = &CraneProvider{}
 
-// var _ provider.ProviderWithFunctions = &CraneProvider{}
-// var _ provider.ProviderWithEphemeralResources = &CraneProvider{}
-
 // CraneProvider defines the provider implementation.
 type CraneProvider struct {
 	// version is set to the provider version on release, "dev" when the
@@ -73,23 +70,12 @@ func (p *CraneProvider) Resources(ctx context.Context) []func() resource.Resourc
 	}
 }
 
-// func (p *CraneProvider) EphemeralResources(ctx context.Context) []func() ephemeral.EphemeralResource {
-// 	return []func() ephemeral.EphemeralResource{
-// 		NewExampleEphemeralResource,
-// 	}
-// }
-
 func (p *CraneProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewTagsDataSource,
+		NewDigestDataSource,
 	}
 }
-
-// func (p *CraneProvider) Functions(ctx context.Context) []func() function.Function {
-// 	return []func() function.Function{
-// 		NewExampleFunction,
-// 	}
-// }
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {

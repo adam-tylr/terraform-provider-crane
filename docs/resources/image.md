@@ -31,8 +31,13 @@ resource "crane_image" "from_file" {
 }
 
 resource "crane_image" "mutable_tag" {
-  source      = "nginx:latest"
-  destination = "my-registry.local/nginx:stable"
+  source        = "nginx:latest"
+  source_digest = data.crane_digest.mutable_tag.digest
+  destination   = "my-registry.local/nginx:stable"
+}
+
+data "crane_digest" "mutable_tag" {
+  reference = "nginx:latest"
 }
 ```
 
@@ -47,7 +52,7 @@ resource "crane_image" "mutable_tag" {
 ### Optional
 
 - `platform` (String) If source is a multi-architecture image, limit copy to a specific platform in the form os/arch[/variant][:osversion] (e.g. linux/amd64). (default all)
-- `source_digest` (String) Used to trigger updates for mutable tags. Set using `filemd5` for a local file or the digest function for a remote image.
+- `source_digest` (String) Used to trigger updates for mutable tags. Set using `filemd5` for a local file or the `crane_digest` data source for a remote image.
 
 ### Read-Only
 
