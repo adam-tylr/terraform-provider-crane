@@ -9,6 +9,7 @@ resource "crane_image" "from_file" {
 }
 
 resource "crane_image" "mutable_tag" {
-  source      = "nginx:latest"
-  destination = "my-registry.local/nginx:stable"
+  source        = "nginx:latest"
+  source_digest = provider::crane::digest("nginx:latest")
+  destination   = "my-registry.local/nginx:stable"
 }
