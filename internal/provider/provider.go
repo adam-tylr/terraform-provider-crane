@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/function"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -18,7 +17,6 @@ import (
 
 // Ensure CraneProvider satisfies various provider interfaces.
 var _ provider.Provider = &CraneProvider{}
-var _ provider.ProviderWithFunctions = &CraneProvider{}
 
 // var _ provider.ProviderWithEphemeralResources = &CraneProvider{}
 
@@ -86,14 +84,7 @@ func (p *CraneProvider) Resources(ctx context.Context) []func() resource.Resourc
 func (p *CraneProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
 		NewTagsDataSource,
-	}
-}
-
-func (p *CraneProvider) Functions(ctx context.Context) []func() function.Function {
-	return []func() function.Function{
-		func() function.Function {
-			return NewDigestFunction(p)
-		},
+		NewDigestDataSource,
 	}
 }
 

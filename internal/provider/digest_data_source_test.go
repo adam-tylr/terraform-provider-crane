@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
-func TestAccDigestFunction(t *testing.T) {
+func TestAccDigestDataSource(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
 	defer teardown()
 
@@ -32,11 +32,21 @@ func TestAccDigestFunction(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config: fmt.Sprintf(testAccDigestFunctionConfig, imageRef),
+				Config: fmt.Sprintf(testAccDigestDataSourceConfig, imageRef),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
-						"output.digest",
-						tfjsonpath.New("outputs").AtMapKey("digest").AtMapKey("value"),
+						"data.crane_digest.test",
+						tfjsonpath.New("id"),
+						knownvalue.StringExact(imageRef),
+					),
+					statecheck.ExpectKnownValue(
+						"data.crane_digest.test",
+						tfjsonpath.New("reference"),
+						knownvalue.StringExact(imageRef),
+					),
+					statecheck.ExpectKnownValue(
+						"data.crane_digest.test",
+						tfjsonpath.New("digest"),
 						knownvalue.StringExact(expectedDigest),
 					),
 				},
@@ -45,8 +55,8 @@ func TestAccDigestFunction(t *testing.T) {
 	})
 }
 
-const testAccDigestFunctionConfig = `
-output "digest" {
-  value = crane::digest("%s")
+const testAccDigestDataSourceConfig = `
+data "crane_digest" "test" {
+  reference = "%s"
 }
 `
