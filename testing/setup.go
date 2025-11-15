@@ -5,10 +5,12 @@ package testing
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"os"
 	"path"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -18,6 +20,17 @@ import (
 )
 
 var SOURCE_REGISTRY = os.Getenv("SOURCE_REGISTRY")
+
+const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+func generateRandomString(length int) string {
+	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
+}
 
 func CreateSourceRef(image string) string {
 	return fmt.Sprintf("%s/%s", SOURCE_REGISTRY, image)
@@ -36,7 +49,7 @@ func CreateRepository(t *testing.T) (string, func()) {
 	svc := ecr.NewFromConfig(cfg)
 
 	// Create a new repository
-	repoName := "test-repo-" + strings.ToLower(t.Name())
+	repoName := "test-repo-" + strings.ToLower(t.Name()) + "-" + generateRandomString(6)
 	t.Logf("Creating repository: %s", repoName)
 	input := &ecr.CreateRepositoryInput{
 		RepositoryName: aws.String(repoName),
