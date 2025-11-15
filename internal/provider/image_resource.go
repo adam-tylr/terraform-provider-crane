@@ -165,7 +165,7 @@ func (r *ImageResource) Create(ctx context.Context, req resource.CreateRequest, 
 			return
 		}
 	} else {
-		dstDigest, err := crane.Digest(source, craneOpts...)
+		dstDigest, err := crane.Digest(destination, craneOpts...)
 		if err == nil && dstDigest != sourceDigest {
 			resp.Diagnostics.AddError(
 				"Destination image already exists but does not match source",
