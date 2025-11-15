@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	testutils "github.com/adam-tylr/terraform-provider-crane/testing"
+	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
@@ -159,6 +160,83 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 						plancheck.ExpectResourceAction(
 							"crane_image.test",
 							plancheck.ResourceActionReplace,
+						),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccImageResourceSourceDigest(t *testing.T) {
+	sourceRepo, teardownSource := testutils.CreateRepository(t)
+	defer teardownSource()
+	destinationRepo, teardownDestination := testutils.CreateRepository(t)
+	defer teardownDestination()
+
+	sourceLatest := fmt.Sprintf("%s:latest", sourceRepo)
+	sourceUpdate := fmt.Sprintf("%s:update", sourceRepo)
+	destination := fmt.Sprintf("%s:latest", destinationRepo)
+
+	if err := crane.Copy(testutils.CreateSourceRef("nginx/nginx:latest"), sourceLatest); err != nil {
+		t.Fatalf("failed to seed source latest image: %v", err)
+	}
+	if err := crane.Copy(testutils.CreateSourceRef("docker/library/alpine:3"), sourceUpdate); err != nil {
+		t.Fatalf("failed to seed source update image: %v", err)
+	}
+
+	sourceDigest, err := crane.Digest(sourceLatest)
+	if err != nil {
+		t.Fatalf("failed to read source digest: %v", err)
+	}
+	updatedSourceDigest, err := crane.Digest(sourceUpdate)
+	if err != nil {
+		t.Fatalf("failed to read updated source digest: %v", err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImageWithSourceDigest(sourceLatest, destination, fmt.Sprintf("\"%s\"", sourceDigest)),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("digest"),
+						knownvalue.StringExact(sourceDigest),
+					),
+					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionCreate,
+						),
+					},
+				},
+			},
+			{
+				PreConfig: func() {
+					if err := crane.Copy(sourceUpdate, sourceLatest); err != nil {
+						t.Fatalf("failed to update source latest image: %v", err)
+					}
+				},
+				Config: testAccImageWithSourceDigest(sourceLatest, destination, fmt.Sprintf("\"%s\"", updatedSourceDigest)),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("digest"),
+						knownvalue.StringExact(updatedSourceDigest),
+					),
+					testutils.CheckRemoteImage("crane_image.test"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"crane_image.test",
+							plancheck.ResourceActionUpdate,
 						),
 					},
 				},
