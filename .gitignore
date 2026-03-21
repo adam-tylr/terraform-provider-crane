@@ -25,7 +25,7 @@ website/node_modules
 *.test
 *.iml
 *.tar.gz
-
+internal.md
 website/vendor
 
 # Test exclusions
