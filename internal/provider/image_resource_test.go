@@ -22,13 +22,29 @@ import (
 func TestAccImageResourceRemoteImage(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
 	defer teardown()
+
+	sourceAlpine := testutils.CreateSourceRef("docker/library/alpine")
+	sourceAlpine3 := testutils.CreateSourceRef("docker/library/alpine:3")
+
+	if err := testutils.SeedMockMultiArchImage(t, sourceAlpine, []string{"linux/amd64", "linux/arm64"}); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
+	}
+	if err := testutils.SeedMockMultiArchImage(t, sourceAlpine3, []string{"linux/amd64", "linux/arm64"}); err != nil {
+		t.Fatalf("failed to seed mock source image tag: %v", err)
+	}
+
+	alpineDigest, err := crane.Digest(sourceAlpine)
+	if err != nil {
+		t.Fatalf("failed to read source digest: %v", err)
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(sourceAlpine, fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -43,7 +59,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
+						knownvalue.StringExact(sourceAlpine),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -63,7 +79,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 			},
 			// Update Source tag
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine:3"), fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(sourceAlpine3, fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -78,7 +94,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine:3")),
+						knownvalue.StringExact(sourceAlpine3),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -98,7 +114,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 			},
 			// Update Source digest
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412"), fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(fmt.Sprintf("%s@%s", sourceAlpine, alpineDigest), fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -113,7 +129,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412")),
+						knownvalue.StringExact(fmt.Sprintf("%s@%s", sourceAlpine, alpineDigest)),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -133,7 +149,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 			},
 			// Update Destination tag
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine:3"), fmt.Sprintf("%s:3", repo)),
+				Config: testAccImage(sourceAlpine3, fmt.Sprintf("%s:3", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -148,7 +164,7 @@ func TestAccImageResourceRemoteImage(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine:3")),
+						knownvalue.StringExact(sourceAlpine3),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -180,10 +196,10 @@ func TestAccImageResourceSourceDigest(t *testing.T) {
 	sourceUpdate := fmt.Sprintf("%s:update", sourceRepo)
 	destination := fmt.Sprintf("%s:latest", destinationRepo)
 
-	if err := crane.Copy(testutils.CreateSourceRef("nginx/nginx:latest"), sourceLatest); err != nil {
+	if err := testutils.SeedMockMultiArchImage(t, sourceLatest, []string{"linux/amd64", "linux/arm64"}); err != nil {
 		t.Fatalf("failed to seed source latest image: %v", err)
 	}
-	if err := crane.Copy(testutils.CreateSourceRef("docker/library/alpine:3"), sourceUpdate); err != nil {
+	if err := testutils.SeedMockMultiArchImage(t, sourceUpdate, []string{"linux/amd64", "linux/arm64"}); err != nil {
 		t.Fatalf("failed to seed source update image: %v", err)
 	}
 
@@ -335,13 +351,25 @@ func TestAccImageResourceWithTarball(t *testing.T) {
 func TestAccImageResourceWithPlatform(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
 	defer teardown()
+
+	sourceAlpineLatest := testutils.CreateSourceRef("docker/library/alpine:latest")
+	sourceAlpine := testutils.CreateSourceRef("docker/library/alpine")
+
+	platforms := []string{"linux/amd64", "linux/arm64"}
+	if err := testutils.SeedMockMultiArchImage(t, sourceAlpineLatest, platforms); err != nil {
+		t.Fatalf("failed to seed mock multi-arch source: %v", err)
+	}
+	if err := testutils.SeedMockMultiArchImage(t, sourceAlpine, platforms); err != nil {
+		t.Fatalf("failed to seed mock multi-arch source tag: %v", err)
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImageWithPlatform(testutils.CreateSourceRef("docker/library/alpine:latest"), fmt.Sprintf("%s:latest", repo), "linux/amd64"),
+				Config: testAccImageWithPlatform(sourceAlpineLatest, fmt.Sprintf("%s:latest", repo), "linux/amd64"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -381,7 +409,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 			},
 			// Update the platform to a different architecture
 			{
-				Config: testAccImageWithPlatform(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo), "linux/arm64"),
+				Config: testAccImageWithPlatform(sourceAlpine, fmt.Sprintf("%s:latest", repo), "linux/arm64"),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -396,7 +424,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
+						knownvalue.StringExact(sourceAlpine),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -421,7 +449,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 			},
 			// Nullify the platform
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(sourceAlpine, fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -436,7 +464,7 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
+						knownvalue.StringExact(sourceAlpine),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -466,13 +494,19 @@ func TestAccImageResourceWithPlatform(t *testing.T) {
 func TestAccImageResourceExternalDeletion(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
 	defer teardown()
+
+	sourceAlpine := testutils.CreateSourceRef("docker/library/alpine")
+	if err := testutils.SeedMockMultiArchImage(t, sourceAlpine, []string{"linux/amd64", "linux/arm64"}); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(sourceAlpine, fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -487,7 +521,7 @@ func TestAccImageResourceExternalDeletion(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
+						knownvalue.StringExact(sourceAlpine),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -528,13 +562,20 @@ func TestAccImageResourceExternalDeletion(t *testing.T) {
 
 func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+
+	sourceAlpine := testutils.CreateSourceRef("docker/library/alpine")
+	if err := testutils.SeedMockMultiArchImage(t, sourceAlpine, []string{"linux/amd64", "linux/arm64"}); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
+	}
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testAccImage(testutils.CreateSourceRef("docker/library/alpine"), fmt.Sprintf("%s:latest", repo)),
+				Config: testAccImage(sourceAlpine, fmt.Sprintf("%s:latest", repo)),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -549,7 +590,7 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
 						tfjsonpath.New("source"),
-						knownvalue.StringExact(testutils.CreateSourceRef("docker/library/alpine")),
+						knownvalue.StringExact(sourceAlpine),
 					),
 					statecheck.ExpectKnownValue(
 						"crane_image.test",
@@ -570,7 +611,7 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 			{
 				// Delete the image externally and expect the resource to be recreated
 				PreConfig: func() {
-					teardown()
+					testutils.DeleteRemoteImage(t, repo, "latest")
 				},
 				RefreshState:       true,
 				ExpectNonEmptyPlan: true,
@@ -590,6 +631,12 @@ func TestAccImageResourceExternalRepoDeletion(t *testing.T) {
 func TestAccImageResourceImport(t *testing.T) {
 	repo, teardown := testutils.CreateRepository(t)
 	defer teardown()
+
+	sourceNginx := testutils.CreateSourceRef("nginx/nginx:latest")
+	if err := testutils.SeedMockImage(t, sourceNginx); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
+	}
+
 	tags := testutils.CopyImagesToRepository(t, repo)
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -627,14 +674,12 @@ func TestAccImageResourceSourceRepositoryDoesNotExist(t *testing.T) {
 }
 
 func TestAccImageResourceDestinationRepositoryDoesNotExist(t *testing.T) {
-	repo, teardown := testutils.CreateRepository(t)
-	defer teardown()
-
-	parts := strings.SplitN(repo, "/", 2)
-	if len(parts) != 2 {
-		t.Fatalf("unexpected repository format: %s", repo)
+	sourceAlpineLatest := testutils.CreateSourceRef("docker/library/alpine:latest")
+	if err := testutils.SeedMockImage(t, sourceAlpineLatest); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
 	}
-	missingRepo := fmt.Sprintf("%s/missing-%s", parts[0], strings.ToLower(t.Name()))
+
+	missingRepo := fmt.Sprintf("localhost:9999/missing-%s", strings.ToLower(t.Name()))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },
@@ -642,7 +687,7 @@ func TestAccImageResourceDestinationRepositoryDoesNotExist(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: testAccImage(
-					testutils.CreateSourceRef("docker/library/alpine:latest"),
+					sourceAlpineLatest,
 					fmt.Sprintf("%s:latest", missingRepo),
 				),
 				ExpectError: regexp.MustCompile("Error pushing image to destination"),
@@ -656,8 +701,13 @@ func TestAccImageResourceDestinationTagAlreadyExistsWithDifferentDigest(t *testi
 	defer teardown()
 
 	destination := fmt.Sprintf("%s:latest", repo)
-	if err := crane.Copy(testutils.CreateSourceRef("docker/library/alpine:3"), destination); err != nil {
+	if err := testutils.SeedMockImage(t, destination); err != nil {
 		t.Fatalf("failed to seed repository with initial image: %v", err)
+	}
+
+	sourceNginx := testutils.CreateSourceRef("nginx/nginx:latest")
+	if err := testutils.SeedMockImage(t, sourceNginx); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
 	}
 
 	resource.Test(t, resource.TestCase{
@@ -665,7 +715,7 @@ func TestAccImageResourceDestinationTagAlreadyExistsWithDifferentDigest(t *testi
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{
 			{
-				Config:      testAccImage(testutils.CreateSourceRef("nginx/nginx:latest"), destination),
+				Config:      testAccImage(sourceNginx, destination),
 				ExpectError: regexp.MustCompile("Destination image already exists but does not match source"),
 			},
 		},
