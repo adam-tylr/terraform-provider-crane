@@ -125,7 +125,7 @@ func CreateLocalTarball(t *testing.T, imageRef string) string {
 	namePart = strings.ReplaceAll(namePart, "@", "-")
 
 	cwd, _ := os.Getwd()
-	index := strings.Index(cwd, "terraform-provider-crane")
+	index := strings.LastIndex(cwd, "terraform-provider-crane")
 	root := cwd[:index+len("terraform-provider-crane")]
 	testingDir := path.Join(root, "testing")
 	tarPath := path.Join(testingDir, fmt.Sprintf("%s.tar.gz", namePart))
