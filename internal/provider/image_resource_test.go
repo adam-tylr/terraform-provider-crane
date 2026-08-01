@@ -722,6 +722,43 @@ func TestAccImageResourceDestinationTagAlreadyExistsWithDifferentDigest(t *testi
 	})
 }
 
+func TestAccImageResourceDestinationTagAlreadyExistsWithForce(t *testing.T) {
+	repo, teardown := testutils.CreateRepository(t)
+	defer teardown()
+
+	destination := fmt.Sprintf("%s:latest", repo)
+	if err := testutils.SeedMockImage(t, destination); err != nil {
+		t.Fatalf("failed to seed repository with initial image: %v", err)
+	}
+
+	sourceNginx := testutils.CreateSourceRef("nginx/nginx:latest")
+	if err := testutils.SeedMockImage(t, sourceNginx); err != nil {
+		t.Fatalf("failed to seed mock source image: %v", err)
+	}
+
+	nginxDigest, err := crane.Digest(sourceNginx)
+	if err != nil {
+		t.Fatalf("failed to read source digest: %v", err)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: testAccImageWithForce(sourceNginx, destination, true),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(
+						"crane_image.test",
+						tfjsonpath.New("digest"),
+						knownvalue.StringExact(nginxDigest),
+					),
+				},
+			},
+		},
+	})
+}
+
 func testAccImage(source string, destination string) string {
 	return fmt.Sprintf(`
 resource "crane_image" "test" {
@@ -749,4 +786,14 @@ resource "crane_image" "test" {
   source_digest = %s
 }
 `, source, destination, sourceDigest)
+}
+
+func testAccImageWithForce(source string, destination string, force bool) string {
+	return fmt.Sprintf(`
+resource "crane_image" "test" {
+  source = %q
+  destination = %q
+  force = %t
+}
+`, source, destination, force)
 }

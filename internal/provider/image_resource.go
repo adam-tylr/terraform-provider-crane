@@ -40,6 +40,7 @@ type ImageResourceModel struct {
 	Destination  types.String `tfsdk:"destination"`
 	SourceDigest types.String `tfsdk:"source_digest"`
 	Platform     types.String `tfsdk:"platform"`
+	Force        types.Bool   `tfsdk:"force"`
 	Id           types.String `tfsdk:"id"`
 	Reference    types.String `tfsdk:"reference"`
 	Digest       types.String `tfsdk:"digest"`
@@ -78,6 +79,10 @@ This resource is designed to support both Terraform and externally managed roll 
 			"platform": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "If source is a multi-architecture image, limit copy to a specific platform in the form os/arch[/variant][:osversion] (e.g. linux/amd64). (default all)",
+			},
+			"force": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "If true, pushes the image to the destination repository even if the destination image already exists with a different digest.",
 			},
 			"id": schema.StringAttribute{
 				Computed:            true,
@@ -167,14 +172,18 @@ func (r *ImageResource) Create(ctx context.Context, req resource.CreateRequest, 
 	} else {
 		dstDigest, err := crane.Digest(destination, craneOpts...)
 		if err == nil && dstDigest != sourceDigest {
-			resp.Diagnostics.AddError(
-				"Destination image already exists but does not match source",
-				fmt.Sprintf("Destination image '%s' already exists with a different digest.", destination),
-			)
-			return
+			if !data.Force.ValueBool() {
+				resp.Diagnostics.AddError(
+					"Destination image already exists but does not match source",
+					fmt.Sprintf("Destination image '%s' already exists with a different digest.", destination),
+				)
+				return
+			}
+			tflog.Debug(ctx, fmt.Sprintf("Destination image '%s' exists with a different digest, but force is enabled. Overwriting...", destination))
+		} else {
+			tflog.Debug(ctx, fmt.Sprintf("Destination image '%s' already exists, skipping push", destination))
+			doPush = false
 		}
-		tflog.Debug(ctx, fmt.Sprintf("Destination image '%s' already exists, skipping push", destination))
-		doPush = false
 	}
 
 	if doPush {

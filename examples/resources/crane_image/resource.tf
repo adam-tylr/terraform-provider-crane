@@ -25,3 +25,12 @@ resource "crane_image" "mutable_file" {
   source_digest = filemd5("path/to/local/image.tar")
   destination   = "my-registry.local/nginx:stable"
 }
+
+# Force push the image even if destination image already exists with a different digest
+resource "crane_image" "force" {
+  source      = "alpine:3.22.2"
+  destination = "my-registry.local/alpine:latest"
+  force       = true
+}
+
+
