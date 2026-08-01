@@ -58,6 +58,11 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5001:5000
     strategy:
       fail-fast: false
       matrix:
@@ -81,5 +86,6 @@ jobs:
       - run: go mod download
       - env:
           TF_ACC: "1"
+          SOURCE_REGISTRY: localhost:5001
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10

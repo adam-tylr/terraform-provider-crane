@@ -18,7 +18,19 @@ fmt:
 test:
 	go test -v -cover -timeout=120s -parallel=10 ./...
 
-testacc:
-	TF_ACC=1 go test -v -cover -timeout 120m ./...
+testacc: test-registry-up
+	TF_ACC=1 SOURCE_REGISTRY=localhost:5001 go test -v -cover -timeout 120m ./...; \
+	status=$$?; \
+	$(MAKE) test-registry-down; \
+	exit $$status
 
-.PHONY: fmt lint test testacc build install generate
+test-registry-up:
+	@echo "Starting local container registry..."
+	@docker run -d -p 5001:5000 -e REGISTRY_STORAGE_DELETE_ENABLED=true --name crane-test-registry registry:2 || true
+
+test-registry-down:
+	@echo "Stopping local container registry..."
+	@docker rm -f crane-test-registry || true
+
+.PHONY: fmt lint test testacc build install generate test-registry-up test-registry-down
+
