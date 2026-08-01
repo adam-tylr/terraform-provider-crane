@@ -58,7 +58,7 @@ func CreateRepository(t *testing.T) (string, func()) {
 	}
 }
 
-// SeedMockImage generates a tiny 1KB mock image and pushes it to a remote registry reference
+// SeedMockImage generates a tiny 1KB mock image and pushes it to a remote registry reference.
 func SeedMockImage(t *testing.T, targetRef string) error {
 	t.Helper()
 	t.Logf("Seeding programmatic mock image: %s", targetRef)
@@ -69,7 +69,7 @@ func SeedMockImage(t *testing.T, targetRef string) error {
 	return crane.Push(img, targetRef)
 }
 
-// SeedMockMultiArchImage generates a multi-platform manifest index of mock images and pushes it
+// SeedMockMultiArchImage generates a multi-platform manifest index of mock images and pushes it.
 func SeedMockMultiArchImage(t *testing.T, targetRef string, platforms []string) error {
 	t.Helper()
 	t.Logf("Seeding programmatic multi-arch mock image index: %s (platforms: %v)", targetRef, platforms)
