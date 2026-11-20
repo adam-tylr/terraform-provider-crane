@@ -33,7 +33,7 @@ provider "crane" {
   alias = "ecr"
 
   registry_auth {
-    address  = replace(data.aws_ecr_authorization_token.token.proxy_endpoint, "https://", "")
+    address  = data.aws_ecr_authorization_token.token.proxy_endpoint
     username = data.aws_ecr_authorization_token.token.user_name
     password = data.aws_ecr_authorization_token.token.password
     # Alternatively using base64 encoded auth:
@@ -48,17 +48,17 @@ provider "crane" {
 ### Optional
 
 - `allow_nondistributable_artifacts` (Boolean) Allow pushing non-distributable (foreign) layers
-- `registry_auth` (Block List) List of registry authentications. When specified, credentials are used directly in memory by Crane operations without requiring host Docker configuration files. (see [below for nested schema](#nestedblock--registry_auth))
+- `registry_auth` (Block List) List of registry authentications. When specified, credentials are used directly in memory by Crane operations without requiring host Docker configuration files. Registries not matching any `registry_auth` block fall back to the default host keychain (`~/.docker/config.json`, credential helpers, etc.). (see [below for nested schema](#nestedblock--registry_auth))
 
 <a id="nestedblock--registry_auth"></a>
 ### Nested Schema for `registry_auth`
 
 Required:
 
-- `address` (String) Registry address/hostname (e.g. `123456789.dkr.ecr.eu-west-1.amazonaws.com` or `index.docker.io`).
+- `address` (String) Registry address/hostname (e.g. `123456789.dkr.ecr.eu-west-1.amazonaws.com` or `index.docker.io`). Scheme prefixes (`https://`, `http://`) and trailing slashes are stripped automatically.
 
 Optional:
 
-- `auth` (String, Sensitive) Base64 encoded credentials string (`username:password`). Alternative to username and password.
-- `password` (String, Sensitive) Password for registry authentication.
-- `username` (String) Username for registry authentication.
+- `auth` (String, Sensitive) Base64 encoded credentials string (`username:password`). Conflicts with `username` and `password`.
+- `password` (String, Sensitive) Password for registry authentication. Must be set together with `username`. Conflicts with `auth`.
+- `username` (String) Username for registry authentication. Must be set together with `password`. Conflicts with `auth`.

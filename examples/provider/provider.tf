@@ -19,7 +19,7 @@ provider "crane" {
   alias = "ecr"
 
   registry_auth {
-    address  = replace(data.aws_ecr_authorization_token.token.proxy_endpoint, "https://", "")
+    address  = data.aws_ecr_authorization_token.token.proxy_endpoint
     username = data.aws_ecr_authorization_token.token.user_name
     password = data.aws_ecr_authorization_token.token.password
     # Alternatively using base64 encoded auth:
